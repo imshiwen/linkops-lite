@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.linkops.server.mapper.BacklinkSourceMapper">
+
+    <insert id="insertIgnoreBatch">
+        insert into backlink_source (url, normalized_url, host, name, description, batch, note)
+        values
+        <foreach collection="list" item="s" separator=",">
+            (#{s.url}, #{s.normalizedUrl}, #{s.host}, #{s.name}, #{s.description}, #{s.batch}, #{s.note})
+        </foreach>
+        on conflict (normalized_url) do nothing
+    </insert>
+
+    <select id="list" resultType="BacklinkSource">
+        select id, url, normalized_url, host, name, description, batch, note,
+               screen_status, http_status, checked_at, created_at
+        from backlink_source
+        order by id
+        limit #{limit}
+    </select>
+
+    <select id="stats" resultType="dev.linkops.server.dto.SourceStats">
+        select count(*)                         as total,
+               count(distinct host)             as hosts,
+               count(*) - count(distinct host)  as extra_entries_on_same_host
+        from backlink_source
+    </select>
+</mapper>
