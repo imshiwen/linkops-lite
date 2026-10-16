@@ -14,6 +14,8 @@ public class BacklinkSource {
     private String note;
     private String screenStatus;
     private Integer httpStatus;
+    private String finalUrl;
+    private String checkError;
     private OffsetDateTime checkedAt;
     private OffsetDateTime createdAt;
 
@@ -37,6 +39,10 @@ public class BacklinkSource {
     public void setScreenStatus(String screenStatus) { this.screenStatus = screenStatus; }
     public Integer getHttpStatus() { return httpStatus; }
     public void setHttpStatus(Integer httpStatus) { this.httpStatus = httpStatus; }
+    public String getFinalUrl() { return finalUrl; }
+    public void setFinalUrl(String finalUrl) { this.finalUrl = finalUrl; }
+    public String getCheckError() { return checkError; }
+    public void setCheckError(String checkError) { this.checkError = checkError; }
     public OffsetDateTime getCheckedAt() { return checkedAt; }
     public void setCheckedAt(OffsetDateTime checkedAt) { this.checkedAt = checkedAt; }
     public OffsetDateTime getCreatedAt() { return createdAt; }

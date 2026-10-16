@@ -13,7 +13,7 @@
 
     <select id="list" resultType="BacklinkSource">
         select id, url, normalized_url, host, name, description, batch, note,
-               screen_status, http_status, checked_at, created_at
+               screen_status, http_status, final_url, check_error, checked_at, created_at
         from backlink_source
         order by id
         limit #{limit}
@@ -24,5 +24,37 @@
                count(distinct host)             as hosts,
                count(*) - count(distinct host)  as extra_entries_on_same_host
         from backlink_source
+    </select>
+
+    <select id="listByScreenStatus" resultType="BacklinkSource">
+        select id, url, host
+        from backlink_source
+        <where>
+            <if test="status != null and status != ''">screen_status = #{status}</if>
+        </where>
+        order by id
+        limit #{limit}
+    </select>
+
+    <update id="updateCheckResults">
+        update backlink_source b
+        set screen_status = v.status,
+            http_status   = v.code,
+            final_url     = v.final_url,
+            check_error   = v.err,
+            checked_at    = now()
+        from (values
+        <foreach collection="list" item="r" separator=",">
+            (#{r.id}::bigint, #{r.status}::text, #{r.httpStatus}::int, #{r.finalUrl}::text, #{r.error}::text)
+        </foreach>
+        ) as v(id, status, code, final_url, err)
+        where b.id = v.id
+    </update>
+
+    <select id="countByScreenStatus" resultType="map">
+        select screen_status as status, count(*) as count
+        from backlink_source
+        group by screen_status
+        order by count desc
     </select>
 </mapper>
