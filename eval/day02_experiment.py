@@ -6,6 +6,7 @@
 结果写到 eval/results/day02-<时间>.md
 """
 import argparse
+import csv
 import json
 import statistics
 import time
@@ -14,6 +15,15 @@ from datetime import datetime
 from pathlib import Path
 
 API = "http://localhost:8090/api/judge/preview"
+LABELS = Path(__file__).parent / "labels.csv"
+
+
+def load_labels(site="cursivefontgenerator"):
+    """人工标注:source_id -> 期望结论(SUITABLE / UNSUITABLE / UNCERTAIN)。"""
+    if not LABELS.exists():
+        return {}
+    with LABELS.open(encoding="utf-8") as f:
+        return {int(r["source_id"]): r["expected"] for r in csv.DictReader(f) if r["site"] == site}
 
 # 每组配置只改一个变量,方便归因
 CONFIGS = [
@@ -41,6 +51,7 @@ def main():
     ap.add_argument("--runs", type=int, default=3)
     args = ap.parse_args()
     ids = [int(x) for x in args.ids.split(",")]
+    labels = load_labels()
 
     rows = []
     for cfg in CONFIGS:
@@ -53,8 +64,8 @@ def main():
 
     lines = [f"# Day 2 实验结果 {datetime.now():%Y-%m-%d %H:%M}", "",
              f"入口 id:{args.ids};每组每个入口跑 {args.runs} 次。", "",
-             "| 配置 | 结论一致率 | 失败次数 | 平均耗时 ms | 平均输入 token | 平均输出 token |",
-             "|---|---:|---:|---:|---:|---:|"]
+             "| 配置 | 结论一致率 | 与人工标注一致 | 失败次数 | 平均耗时 ms | 平均输入 token | 平均输出 token |",
+             "|---|---:|---:|---:|---:|---:|---:|"]
     for cfg in CONFIGS:
         rs = [r for r in rows if r["cfg"] == cfg["name"]]
         ok = [r for r in rs if "error" not in r and r.get("result")]
@@ -64,14 +75,17 @@ def main():
             if verdicts and len(set(map(str, verdicts))) == 1:
                 consistent += 1
         avg = lambda k: round(statistics.mean([r[k] for r in ok if r.get(k) is not None]), 0) if ok else "-"
-        lines.append(f"| {cfg['name']} | {consistent}/{len(ids)} | {len(rs) - len(ok)} | "
+        labeled = [r for r in ok if r["id"] in labels]
+        agree = sum(1 for r in labeled if r["result"].get("verdict") == labels[r["id"]])
+        accuracy = f"{agree}/{len(labeled)}" if labeled else "-"
+        lines.append(f"| {cfg['name']} | {consistent}/{len(ids)} | {accuracy} | {len(rs) - len(ok)} | "
                      f"{avg('elapsedMs')} | {avg('promptTokens')} | {avg('completionTokens')} |")
 
-    lines += ["", "## 逐条结论", "", "| 配置 | id | 次 | verdict | 首条理由 |", "|---|---|---|---|---|"]
+    lines += ["", "## 逐条结论", "", "| 配置 | id | 次 | verdict | 人工标注 | 首条理由 |", "|---|---|---|---|---|---|"]
     for r in rows:
         res = r.get("result") or {}
         reason = (res.get("reasons") or [r.get("error", "")])[0][:60].replace("|", "/")
-        lines.append(f"| {r['cfg']} | {r['id']} | {r['run']} | {res.get('verdict', 'ERR')} | {reason} |")
+        lines.append(f"| {r['cfg']} | {r['id']} | {r['run']} | {res.get('verdict', 'ERR')} | {labels.get(r['id'], '-')} | {reason} |")
 
     out = Path(__file__).parent / "results" / f"day02-{datetime.now():%Y%m%d-%H%M}.md"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
