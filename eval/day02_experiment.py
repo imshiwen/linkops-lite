@@ -48,8 +48,8 @@ def main():
             for i in range(args.runs):
                 d = call(sid, cfg)
                 rows.append({"cfg": cfg["name"], "id": sid, "run": i + 1, **d})
-                verdict = (d.get("result") or {}).get("suitable") if "error" not in d else "ERR"
-                print(f"{cfg['name']:<24} id={sid:<4} run={i + 1} suitable={verdict} ms={d.get('elapsedMs')}")
+                verdict = (d.get("result") or {}).get("verdict") if "error" not in d else "ERR"
+                print(f"{cfg['name']:<24} id={sid:<4} run={i + 1} verdict={verdict} ms={d.get('elapsedMs')}")
 
     lines = [f"# Day 2 实验结果 {datetime.now():%Y-%m-%d %H:%M}", "",
              f"入口 id:{args.ids};每组每个入口跑 {args.runs} 次。", "",
@@ -60,18 +60,18 @@ def main():
         ok = [r for r in rs if "error" not in r and r.get("result")]
         consistent = 0
         for sid in ids:
-            verdicts = [r["result"].get("suitable") for r in ok if r["id"] == sid]
+            verdicts = [r["result"].get("verdict") for r in ok if r["id"] == sid]
             if verdicts and len(set(map(str, verdicts))) == 1:
                 consistent += 1
         avg = lambda k: round(statistics.mean([r[k] for r in ok if r.get(k) is not None]), 0) if ok else "-"
         lines.append(f"| {cfg['name']} | {consistent}/{len(ids)} | {len(rs) - len(ok)} | "
                      f"{avg('elapsedMs')} | {avg('promptTokens')} | {avg('completionTokens')} |")
 
-    lines += ["", "## 逐条结论", "", "| 配置 | id | 次 | suitable | 首条理由 |", "|---|---|---|---|---|"]
+    lines += ["", "## 逐条结论", "", "| 配置 | id | 次 | verdict | 首条理由 |", "|---|---|---|---|---|"]
     for r in rows:
         res = r.get("result") or {}
         reason = (res.get("reasons") or [r.get("error", "")])[0][:60].replace("|", "/")
-        lines.append(f"| {r['cfg']} | {r['id']} | {r['run']} | {res.get('suitable', 'ERR')} | {reason} |")
+        lines.append(f"| {r['cfg']} | {r['id']} | {r['run']} | {res.get('verdict', 'ERR')} | {reason} |")
 
     out = Path(__file__).parent / "results" / f"day02-{datetime.now():%Y%m%d-%H%M}.md"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")

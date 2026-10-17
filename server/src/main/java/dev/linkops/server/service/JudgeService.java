@@ -10,12 +10,18 @@ import dev.linkops.server.entity.BacklinkSource;
 import dev.linkops.server.mapper.BacklinkSourceMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -33,15 +39,19 @@ public class JudgeService {
     private final Resource systemPrompt = new ClassPathResource("prompts/judge-system.st");
     private final Resource userPrompt = new ClassPathResource("prompts/judge-user.st");
     private final String model;
+    /** 最多尝试次数(含第一次)。 */
+    private final int maxAttempts;
 
     public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, JudgmentValidator validator,
                         BacklinkSourceMapper sourceMapper,
-                        @Value("${spring.ai.openai.chat.model:}") String model) {
+                        @Value("${spring.ai.openai.chat.model:}") String model,
+                        @Value("${app.judge.max-attempts:3}") int maxAttempts) {
         this.chatClient = builder.build();
         this.fetcher = fetcher;
         this.validator = validator;
         this.sourceMapper = sourceMapper;
         this.model = model;
+        this.maxAttempts = Math.max(1, maxAttempts);
     }
 
     public JudgeResponse preview(JudgeRequest req) {
@@ -57,39 +67,81 @@ public class JudgeService {
                 .extraBody(Map.of("enable_thinking", thinking));
         if (req.temperature() != null) options.temperature(req.temperature());
 
+        // 先渲染成文本消息:重试时要在同一段对话后面追加"上次输出 + 修正意见"
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(new PromptTemplate(systemPrompt).render()));
+        messages.add(new UserMessage(new PromptTemplate(userPrompt).render(Map.of(
+                "site", site,
+                "url", page.finalUrl(),
+                "title", page.title(),
+                "description", page.description(),
+                "forms", page.forms(),
+                "text", page.text()))));
+
         long start = System.currentTimeMillis();
-        ResponseEntity<ChatResponse, JudgmentResult> entity = chatClient.prompt()
-                .options(options)
-                .system(systemPrompt)
-                .user(u -> u.text(userPrompt).params(Map.of(
-                        "site", site,
-                        "url", page.finalUrl(),
-                        "title", page.title(),
-                        "description", page.description(),
-                        "forms", page.forms(),
-                        "text", page.text())))
-                .call()
-                .responseEntity(JudgmentResult.class, spec -> {
-                    if (nativeSchema) spec.useProviderStructuredOutput();
-                    spec.validateSchema();
-                });
+        JudgmentResult result = null;
+        List<String> errors = List.of();
+        String raw = null;
+        int promptTokens = 0, completionTokens = 0;
+        Object nativeUsage = null;
+        int attempts = 0;
 
-        // TODO(你来写):业务校验不通过时怎么办?
-        // 思路:把 validationErrors 作为反馈追加到对话里,让模型修正,最多重试 N 次;
-        // 仍不通过就返回最后一次结果并标记失败,不要无限重试。重试次数记到 attempts。
-        JudgmentResult result = entity.entity();
-        List<String> errors = validator.validate(result);
-        int attempts = 1;
+        // 重试只处理"格式解析失败"和"业务规则矛盾",网络超时、限流由 HTTP 客户端层处理
+        while (attempts < maxAttempts) {
+            attempts++;
+            try {
+                ResponseEntity<ChatResponse, JudgmentResult> entity = chatClient.prompt()
+                        .options(options)
+                        .messages(messages)
+                        .call()
+                        .responseEntity(JudgmentResult.class, spec -> {
+                            if (nativeSchema) spec.useProviderStructuredOutput();
+                            spec.validateSchema();
+                        });
+                ChatResponse resp = entity.response();
+                raw = resp == null ? null : resp.getResult().getOutput().getText();
+                Usage usage = resp == null ? null : resp.getMetadata().getUsage();
+                if (usage != null) {
+                    // 成本按所有尝试累计,否则重试会让实验里的 token 数偏低
+                    promptTokens += nz(usage.getPromptTokens());
+                    completionTokens += nz(usage.getCompletionTokens());
+                    nativeUsage = usage.getNativeUsage();
+                }
+                result = entity.entity();
+                errors = validator.validate(result);
+            } catch (RuntimeException e) {
+                // 输出不是合法 JSON 或不符合 schema:没有可用结果,同样带着原因重试
+                result = null;
+                errors = List.of("上次输出无法解析为符合要求的 JSON:" + firstLine(e.getMessage()));
+            }
+            if (errors.isEmpty() || attempts >= maxAttempts) break;
 
-        ChatResponse resp = entity.response();
-        Usage usage = resp == null ? null : resp.getMetadata().getUsage();
-        return new JudgeResponse(source.getId(), page.finalUrl(), result, errors, attempts,
-                resp == null ? null : resp.getResult().getOutput().getText(),
-                usage == null ? null : usage.getPromptTokens(),
-                usage == null ? null : usage.getCompletionTokens(),
-                usage == null ? null : usage.getNativeUsage(),
+            if (raw != null) messages.add(new AssistantMessage(raw));
+            messages.add(new UserMessage(feedback(errors)));
+        }
+
+        return new JudgeResponse(source.getId(), page.finalUrl(), result, errors, attempts, raw,
+                promptTokens, completionTokens, nativeUsage,
                 System.currentTimeMillis() - start,
                 model, thinking, req.temperature(), nativeSchema);
+    }
+
+    /** 修正意见:逐条列出违反的规则,要求输出完整结果而不是只改动的字段。 */
+    private static String feedback(List<String> errors) {
+        StringBuilder sb = new StringBuilder("你上一次的研判结果没有通过校验,问题如下:\n");
+        for (String e : errors) sb.append("- ").append(e).append('\n');
+        sb.append("请根据同样的页面信息修正这些问题,重新输出完整的研判结果。不要编造页面中没有的信息。");
+        return sb.toString();
+    }
+
+    private static int nz(Integer n) {
+        return n == null ? 0 : n;
+    }
+
+    private static String firstLine(String s) {
+        if (s == null) return "未知错误";
+        String line = s.lines().findFirst().orElse(s);
+        return line.length() > 200 ? line.substring(0, 200) : line;
     }
 
     private static String loadSite(String name) {
