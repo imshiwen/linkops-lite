@@ -15,6 +15,8 @@ public interface BacklinkSourceMapper {
 
     List<BacklinkSource> list(@Param("limit") int limit);
 
+    BacklinkSource findById(@Param("id") long id);
+
     SourceStats stats();
 
     /** 按初筛状态取待检查的入口;status 为空时取全部。 */

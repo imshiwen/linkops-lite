@@ -19,6 +19,13 @@
         limit #{limit}
     </select>
 
+    <select id="findById" resultType="BacklinkSource">
+        select id, url, normalized_url, host, name, description, batch, note,
+               screen_status, http_status, final_url, check_error, checked_at, created_at
+        from backlink_source
+        where id = #{id}
+    </select>
+
     <select id="stats" resultType="dev.linkops.server.dto.SourceStats">
         select count(*)                         as total,
                count(distinct host)             as hosts,
