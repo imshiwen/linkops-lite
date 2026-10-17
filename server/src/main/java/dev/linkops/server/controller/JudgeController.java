@@ -1,8 +1,8 @@
 package dev.linkops.server.controller;
 
-import dev.linkops.server.judge.JudgeRequest;
-import dev.linkops.server.judge.JudgeResponse;
-import dev.linkops.server.judge.JudgeService;
+import dev.linkops.server.dto.JudgeRequest;
+import dev.linkops.server.dto.JudgeResponse;
+import dev.linkops.server.service.JudgeService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

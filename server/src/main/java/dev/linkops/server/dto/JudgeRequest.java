@@ -1,4 +1,4 @@
-package dev.linkops.server.judge;
+package dev.linkops.server.dto;
 
 /**
  * 一次研判预览的参数。

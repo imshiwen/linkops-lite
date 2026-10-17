@@ -1,4 +1,4 @@
-package dev.linkops.server.judge;
+package dev.linkops.server.dto;
 
 import java.util.List;
 

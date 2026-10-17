@@ -32,12 +32,11 @@ linkops-lite/
         │   ├── ServerApplication.java   启动入口
         │   ├── config/        配置类:数据源(Neon 连接串转换)
         │   ├── controller/    接口层:接收 HTTP 请求、参数校验、返回 JSON
-        │   ├── service/       业务层:导入、去重、可访问性检查
+        │   ├── service/       业务层:导入去重、可访问性检查、研判(抓页面、调模型、结果校验)
         │   ├── mapper/        数据访问层接口(MyBatis),SQL 在 resources/mapper
         │   ├── entity/        与表一一对应的实体类
-        │   ├── dto/           接口出入参(record),不直接暴露实体
-        │   ├── util/          无状态工具:URL 规范化、列表解析
-        │   └── judge/         研判模块(Day 2 起):抓页面、调模型、结构化结果
+        │   ├── dto/           接口出入参和模型结构化输出(record),不直接暴露实体
+        │   └── util/          无状态工具:URL 规范化、列表解析
         ├── main/resources/
         │   ├── application.properties   应用配置(引用 .env.local 里的变量)
         │   ├── db/migration/            Flyway 迁移脚本
@@ -48,8 +47,16 @@ linkops-lite/
 ```
 
 **分层规则(MVC + 三层):** `controller → service → mapper → 数据库`,只能上层调下层,不跨层、不反向。
-`judge/` 是按功能聚合的模块包:AI 相关代码变化快,类之间耦合紧,放在一起比拆散到各层更好找。
-它内部仍然遵守同样的方向:`JudgeController`(在 controller 包)→ `JudgeService` → `PageFetcher` / `ChatClient` / `BacklinkSourceMapper`。
+所有功能都按层存放,不建按功能聚合的包。以研判为例:
+
+| 层 | 研判相关的类 |
+|---|---|
+| controller | `JudgeController` |
+| service | `JudgeService`(流程编排)、`PageFetcher`(抓页面)、`JudgmentValidator`(结果校验) |
+| dto | `JudgeRequest`、`JudgeResponse`、`JudgmentResult`(模型输出结构)、`PageSnapshot`(页面摘要) |
+| mapper | 复用 `BacklinkSourceMapper.findById` |
+
+调用 AI 的 `ChatClient` 属于外部依赖,和数据库一样只在 service 层使用。
 
 ## 3. 一次请求怎么走
 

@@ -20,8 +20,8 @@
 
 1. **`prompts/judge-system.st`**:评估目标、判断标准、打分规则、信息不足时不要猜。
 2. **`prompts/judge-user.st`**:用户消息模板,`{site}` `{url}` `{title}` `{description}` `{forms}` `{text}` 是可用变量。
-3. **`judge/JudgmentResult.java`**:研判结果字段。后续审核、排序、起草、评估都依赖它,想清楚再定。
-4. **`judge/JudgmentValidator.java` + `JudgeService` 里的重试**:业务规则校验;不通过时把错误反馈给模型重试,有上限。
+3. **`dto/JudgmentResult.java`**:研判结果字段。后续审核、排序、起草、评估都依赖它,想清楚再定。
+4. **`service/JudgmentValidator.java` + `service/JudgeService.java` 里的重试**:业务规则校验;不通过时把错误反馈给模型重试,有上限。
 
 改完后单独测一个入口:
 

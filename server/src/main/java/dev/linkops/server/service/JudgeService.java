@@ -1,5 +1,9 @@
-package dev.linkops.server.judge;
+package dev.linkops.server.service;
 
+import dev.linkops.server.dto.JudgeRequest;
+import dev.linkops.server.dto.JudgeResponse;
+import dev.linkops.server.dto.JudgmentResult;
+import dev.linkops.server.dto.PageSnapshot;
 import dev.linkops.server.entity.BacklinkSource;
 import dev.linkops.server.mapper.BacklinkSourceMapper;
 import java.io.IOException;

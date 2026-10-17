@@ -1,5 +1,6 @@
-package dev.linkops.server.judge;
+package dev.linkops.server.service;
 
+import dev.linkops.server.dto.PageSnapshot;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

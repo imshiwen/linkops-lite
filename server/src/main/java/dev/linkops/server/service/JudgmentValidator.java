@@ -1,5 +1,6 @@
-package dev.linkops.server.judge;
+package dev.linkops.server.service;
 
+import dev.linkops.server.dto.JudgmentResult;
 import java.util.ArrayList;
 import java.util.List;
 
