@@ -1,5 +1,7 @@
 package dev.linkops.server.service;
 
+import dev.linkops.server.component.JudgmentValidator;
+import dev.linkops.server.component.PageFetcher;
 import dev.linkops.server.dto.JudgeRequest;
 import dev.linkops.server.dto.JudgeResponse;
 import dev.linkops.server.dto.JudgmentResult;
@@ -26,15 +28,18 @@ public class JudgeService {
 
     private final ChatClient chatClient;
     private final PageFetcher fetcher;
+    private final JudgmentValidator validator;
     private final BacklinkSourceMapper sourceMapper;
     private final Resource systemPrompt = new ClassPathResource("prompts/judge-system.st");
     private final Resource userPrompt = new ClassPathResource("prompts/judge-user.st");
     private final String model;
 
-    public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, BacklinkSourceMapper sourceMapper,
+    public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, JudgmentValidator validator,
+                        BacklinkSourceMapper sourceMapper,
                         @Value("${spring.ai.openai.chat.model:}") String model) {
         this.chatClient = builder.build();
         this.fetcher = fetcher;
+        this.validator = validator;
         this.sourceMapper = sourceMapper;
         this.model = model;
     }
@@ -73,7 +78,7 @@ public class JudgeService {
         // 思路:把 validationErrors 作为反馈追加到对话里,让模型修正,最多重试 N 次;
         // 仍不通过就返回最后一次结果并标记失败,不要无限重试。重试次数记到 attempts。
         JudgmentResult result = entity.entity();
-        List<String> errors = JudgmentValidator.validate(result);
+        List<String> errors = validator.validate(result);
         int attempts = 1;
 
         ChatResponse resp = entity.response();

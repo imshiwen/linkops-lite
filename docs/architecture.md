@@ -32,7 +32,8 @@ linkops-lite/
         │   ├── ServerApplication.java   启动入口
         │   ├── config/        配置类:数据源(Neon 连接串转换)
         │   ├── controller/    接口层:接收 HTTP 请求、参数校验、返回 JSON
-        │   ├── service/       业务层:导入去重、可访问性检查、研判(抓页面、调模型、结果校验)
+        │   ├── service/       业务层:流程编排,如导入去重、可访问性检查、研判
+        │   ├── component/     功能组件:被 service 调用的非业务类,如抓取页面、结果校验
         │   ├── mapper/        数据访问层接口(MyBatis),SQL 在 resources/mapper
         │   ├── entity/        与表一一对应的实体类
         │   ├── dto/           接口出入参和模型结构化输出(record),不直接暴露实体
@@ -47,12 +48,19 @@ linkops-lite/
 ```
 
 **分层规则(MVC + 三层):** `controller → service → mapper → 数据库`,只能上层调下层,不跨层、不反向。
-所有功能都按层存放,不建按功能聚合的包。以研判为例:
+所有功能都按层存放,不建按功能聚合的包。
+
+- **service** 只放业务编排:决定"先做什么、再做什么",管事务。
+- **component** 放被 service 调用的功能类(Spring Bean):抓页面、校验、以后的分批策略等,自己不编排流程。
+- **util** 放无状态的静态工具方法,不需要注入。
+
+以研判为例:
 
 | 层 | 研判相关的类 |
 |---|---|
 | controller | `JudgeController` |
-| service | `JudgeService`(流程编排)、`PageFetcher`(抓页面)、`JudgmentValidator`(结果校验) |
+| service | `JudgeService`(流程编排) |
+| component | `PageFetcher`(抓页面)、`JudgmentValidator`(结果校验) |
 | dto | `JudgeRequest`、`JudgeResponse`、`JudgmentResult`(模型输出结构)、`PageSnapshot`(页面摘要) |
 | mapper | 复用 `BacklinkSourceMapper.findById` |
 
@@ -80,13 +88,13 @@ curl --data-binary @list.md
   → JudgeController.preview()
   → JudgeService.preview()
       → BacklinkSourceMapper.findById()          查外链入口
-      → PageFetcher.fetch()                      抓页面、提取表单和正文(截断)
+      → PageFetcher.fetch()                      component:抓页面、提取表单和正文(截断)
       → 读取 sites/cursivefontgenerator.md       自有站资料
       → ChatClient.prompt()                      Spring AI:system + user 模板 + 参数
           .options(...)                          思考开关、temperature
           .call().responseEntity(JudgmentResult) 结构化输出,自动反序列化
               → OpenAI Java SDK → HTTP POST {AI_CHAT_BASE_URL}/chat/completions
-      → JudgmentValidator.validate()             业务规则校验
+      → JudgmentValidator.validate()             component:业务规则校验
   ← JudgeResponse                                结果 + token + 耗时,供实验对比
 ```
 

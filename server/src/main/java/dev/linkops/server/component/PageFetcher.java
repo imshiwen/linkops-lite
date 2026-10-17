@@ -1,4 +1,4 @@
-package dev.linkops.server.service;
+package dev.linkops.server.component;
 
 import dev.linkops.server.dto.PageSnapshot;
 import java.net.URI;
