@@ -1,6 +1,6 @@
 source_id,site,expected,labeled_at,note
 4,cursivefontgenerator,UNSUITABLE,2026-10-17,AI 工具聚合平台
 6,cursivefontgenerator,UNSUITABLE,2026-10-17,AI 工具聚合平台
-9,cursivefontgenerator,UNSUITABLE,2026-10-17,AI 工具聚合平台(模型首次判为 SUITABLE/MEDIUM,与人工不一致)
+9,cursivefontgenerator,SUITABLE,2026-10-18,通用软件目录;原标 UNSUITABLE,复核后认为标准过窄,按宽进原则改为 SUITABLE
 136,cursivefontgenerator,SUITABLE,2026-10-17,产品展示,契合在线工具站
 46,cursivefontgenerator,SUITABLE,2026-10-17,产品展示,契合在线工具站
