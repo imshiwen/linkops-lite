@@ -27,7 +27,7 @@ def load_labels(site="cursivefontgenerator"):
 
 # 每组配置只改一个变量,方便归因
 CONFIGS = [
-    {"name": "基线:不思考,默认温度", "thinking": False, "temperature": None, "nativeSchema": False},
+    {"name": "基线:不思考,配置默认温度", "thinking": False, "temperature": None, "nativeSchema": False},
     {"name": "不思考,temperature=0", "thinking": False, "temperature": 0.0, "nativeSchema": False},
     {"name": "不思考,temperature=1.2", "thinking": False, "temperature": 1.2, "nativeSchema": False},
     {"name": "开启思考", "thinking": True, "temperature": None, "nativeSchema": False},

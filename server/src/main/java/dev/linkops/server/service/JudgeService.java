@@ -41,17 +41,21 @@ public class JudgeService {
     private final String model;
     /** 最多尝试次数(含第一次)。 */
     private final int maxAttempts;
+    /** 请求未指定时使用的 temperature;Day 2 实验结论:研判用 0 最稳最准。 */
+    private final double defaultTemperature;
 
     public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, JudgmentValidator validator,
                         BacklinkSourceMapper sourceMapper,
                         @Value("${spring.ai.openai.chat.model:}") String model,
-                        @Value("${app.judge.max-attempts:3}") int maxAttempts) {
+                        @Value("${app.judge.max-attempts:3}") int maxAttempts,
+                        @Value("${app.judge.temperature:0}") double defaultTemperature) {
         this.chatClient = builder.build();
         this.fetcher = fetcher;
         this.validator = validator;
         this.sourceMapper = sourceMapper;
         this.model = model;
         this.maxAttempts = Math.max(1, maxAttempts);
+        this.defaultTemperature = defaultTemperature;
     }
 
     public JudgeResponse preview(JudgeRequest req) {
@@ -61,11 +65,12 @@ public class JudgeService {
         String site = loadSite(req.siteOrDefault());
         boolean thinking = Boolean.TRUE.equals(req.thinking());
         boolean nativeSchema = Boolean.TRUE.equals(req.nativeSchema());
+        double temperature = req.temperature() != null ? req.temperature() : defaultTemperature;
 
         // 百炼兼容接口的 enable_thinking 不在 OpenAI 标准参数里,用 extraBody 放到请求体顶层
         OpenAiChatOptions.Builder options = OpenAiChatOptions.builder()
-                .extraBody(Map.of("enable_thinking", thinking));
-        if (req.temperature() != null) options.temperature(req.temperature());
+                .extraBody(Map.of("enable_thinking", thinking))
+                .temperature(temperature);
 
         // 先渲染成文本消息:重试时要在同一段对话后面追加"上次输出 + 修正意见"
         List<Message> messages = new ArrayList<>();
@@ -123,7 +128,7 @@ public class JudgeService {
         return new JudgeResponse(source.getId(), page.finalUrl(), result, errors, attempts, raw,
                 promptTokens, completionTokens, nativeUsage,
                 System.currentTimeMillis() - start,
-                model, thinking, req.temperature(), nativeSchema);
+                model, thinking, temperature, nativeSchema);
     }
 
     /** 修正意见:逐条列出违反的规则,要求输出完整结果而不是只改动的字段。 */
