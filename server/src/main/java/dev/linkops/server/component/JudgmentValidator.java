@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 业务规则校验。Spring AI 的 validateSchema() 只保证 JSON 结构对;
- * 字段之间是否矛盾、是否违反 judge-system.st 的规则,需要我们自己校验。
+ * 字段之间是否矛盾、是否违反 system.st 的规则,需要我们自己校验。
  *
  * 返回违规清单而不是抛异常:每条信息会作为反馈发回给模型重试,所以要写成模型能照着改的话。
  */

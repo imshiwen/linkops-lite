@@ -42,7 +42,7 @@ linkops-lite/
         │   ├── application.properties   应用配置(引用 .env.local 里的变量)
         │   ├── db/migration/            Flyway 迁移脚本
         │   ├── mapper/                  MyBatis XML
-        │   ├── prompts/                 提示词模板(.st,{变量} 占位)
+        │   ├── prompts/judge/<版本>/   研判提示词(system.st、user.st,{变量} 占位),按版本存放
         │   └── sites/                   自有站资料(Day 5 前先用文件,之后进库)
         └── test/java/                   单元测试
 ```
@@ -90,6 +90,7 @@ curl --data-binary @list.md
       → BacklinkSourceMapper.findById()          查外链入口
       → PageFetcher.fetch()                      component:抓页面、提取表单和正文(截断)
       → 读取 sites/cursivefontgenerator.md       自有站资料
+      → 按 promptVersion 取 prompts/judge/<版本>/  默认 app.judge.prompt-version
       → ChatClient.prompt()                      Spring AI:system + user 模板 + 参数
           .options(...)                          思考开关、temperature
           .call().responseEntity(JudgmentResult) 结构化输出,自动反序列化

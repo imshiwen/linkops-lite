@@ -36,19 +36,20 @@ public class JudgeService {
     private final PageFetcher fetcher;
     private final JudgmentValidator validator;
     private final BacklinkSourceMapper sourceMapper;
-    private final Resource systemPrompt = new ClassPathResource("prompts/judge-system.st");
-    private final Resource userPrompt = new ClassPathResource("prompts/judge-user.st");
     private final String model;
     /** 最多尝试次数(含第一次)。 */
     private final int maxAttempts;
     /** 请求未指定时使用的 temperature;Day 2 实验结论:研判用 0 最稳最准。 */
     private final double defaultTemperature;
+    /** 请求未指定时使用的提示词版本。 */
+    private final String defaultPromptVersion;
 
     public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, JudgmentValidator validator,
                         BacklinkSourceMapper sourceMapper,
                         @Value("${spring.ai.openai.chat.model:}") String model,
                         @Value("${app.judge.max-attempts:3}") int maxAttempts,
-                        @Value("${app.judge.temperature:0}") double defaultTemperature) {
+                        @Value("${app.judge.temperature:0}") double defaultTemperature,
+                        @Value("${app.judge.prompt-version:v1}") String defaultPromptVersion) {
         this.chatClient = builder.build();
         this.fetcher = fetcher;
         this.validator = validator;
@@ -56,6 +57,7 @@ public class JudgeService {
         this.model = model;
         this.maxAttempts = Math.max(1, maxAttempts);
         this.defaultTemperature = defaultTemperature;
+        this.defaultPromptVersion = defaultPromptVersion;
     }
 
     public JudgeResponse preview(JudgeRequest req) {
@@ -66,6 +68,8 @@ public class JudgeService {
         boolean thinking = Boolean.TRUE.equals(req.thinking());
         boolean nativeSchema = Boolean.TRUE.equals(req.nativeSchema());
         double temperature = req.temperature() != null ? req.temperature() : defaultTemperature;
+        String promptVersion = req.promptVersion() == null || req.promptVersion().isBlank()
+                ? defaultPromptVersion : req.promptVersion();
 
         // 百炼兼容接口的 enable_thinking 不在 OpenAI 标准参数里,用 extraBody 放到请求体顶层
         OpenAiChatOptions.Builder options = OpenAiChatOptions.builder()
@@ -74,8 +78,8 @@ public class JudgeService {
 
         // 先渲染成文本消息:重试时要在同一段对话后面追加"上次输出 + 修正意见"
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(new PromptTemplate(systemPrompt).render()));
-        messages.add(new UserMessage(new PromptTemplate(userPrompt).render(Map.of(
+        messages.add(new SystemMessage(new PromptTemplate(prompt(promptVersion, "system")).render()));
+        messages.add(new UserMessage(new PromptTemplate(prompt(promptVersion, "user")).render(Map.of(
                 "site", site,
                 "url", page.finalUrl(),
                 "title", page.title(),
@@ -128,7 +132,15 @@ public class JudgeService {
         return new JudgeResponse(source.getId(), page.finalUrl(), result, errors, attempts, raw,
                 promptTokens, completionTokens, nativeUsage,
                 System.currentTimeMillis() - start,
-                model, thinking, temperature, nativeSchema);
+                model, thinking, temperature, nativeSchema, promptVersion);
+    }
+
+    /** 按版本取提示词模板,版本只允许字母数字,防止路径穿越。 */
+    private static Resource prompt(String version, String role) {
+        if (!version.matches("[A-Za-z0-9_-]+")) throw new IllegalArgumentException("bad prompt version: " + version);
+        Resource r = new ClassPathResource("prompts/judge/" + version + "/" + role + ".st");
+        if (!r.exists()) throw new IllegalArgumentException("prompt not found: " + version + "/" + role);
+        return r;
     }
 
     /** 修正意见:逐条列出违反的规则,要求输出完整结果而不是只改动的字段。 */

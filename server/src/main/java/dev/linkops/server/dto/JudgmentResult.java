@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * 研判结果:模型按这个结构输出 JSON,Spring AI 自动反序列化。
- * 字段与 judge-system.st 的判断维度一一对应;@JsonPropertyDescription 会进入 JSON schema,模型据此理解字段含义。
+ * 字段与 prompts/judge/<版本>/system.st 的判断维度一一对应;@JsonPropertyDescription 会进入 JSON schema,模型据此理解字段含义。
  */
 public record JudgmentResult(
         @JsonPropertyDescription("总结论:SUITABLE=适合,UNSUITABLE=不适合,UNCERTAIN=信息不足无法判断(不要猜测)")

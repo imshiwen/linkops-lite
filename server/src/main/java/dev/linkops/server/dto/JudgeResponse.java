@@ -17,4 +17,5 @@ public record JudgeResponse(
         String model,
         boolean thinking,
         Double temperature,
-        boolean nativeSchema) {}
+        boolean nativeSchema,
+        String promptVersion) {}
