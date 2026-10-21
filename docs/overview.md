@@ -47,6 +47,7 @@
 | 10-17 | 代码按层存放:controller / service(只编排)/ component(功能类)/ mapper / dto / entity / util | `architecture.md` |
 | 10-18 | 研判默认关闭思考 + temperature=0 | 实验 15/15 全对且最快;`day-02.md` |
 | 10-18 | 研判"宽进",召回优先,用等级区分优先级 | 外链尽量多发,人工审核兜底;`design.md` |
+| 10-21 | 档位只给"适合"排优先级:SUITABLE→HIGH/MEDIUM/LOW,UNSUITABLE→NONE,UNCERTAIN→UNRATED | 统一宽进原则、prompt、校验器三处说法;`design.md` |
 
 ## 5. 文件索引
 
@@ -66,8 +67,8 @@
 
 ## 6. 待决定
 
-- 档位(level)含义:宽进原则、v1 prompt、校验器三处不一致,见 `day-03.md` 第 2 节。
+(暂无)
 
 ## 7. 下一步
 
-Day 3:先定档位含义 → 标注 20 条 → 跑 v1 基线 → 写 v2 → v1/v2 回归。
+Day 3:标注 20 条 → 跑 v1 基线 → 写 v2 → v1/v2 回归。

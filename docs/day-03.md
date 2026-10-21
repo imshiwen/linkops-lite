@@ -31,7 +31,16 @@
 - **方案 A(推荐):** level 只表示"适合的站里先发哪个"。SUITABLE 可以是 HIGH/MEDIUM/LOW;UNSUITABLE 不再分档,统一填 LOW 或新增 `NONE`。校验器相应修改。
 - **方案 B:** 保持 v1 含义(LOW = 不相关),宽进只靠 verdict,不用档位排优先级。
 
-决定后写进 `design.md`,v2 prompt 和校验器按它改。
+**已决定(2026-10-21):方案 A。** 已写入 `design.md`。具体规则:
+
+| verdict | 允许的 level |
+|---|---|
+| SUITABLE | HIGH / MEDIUM / LOW(LOW = 适合但优先级低) |
+| UNSUITABLE | NONE(新增枚举值,不分档) |
+| UNCERTAIN | UNRATED |
+
+要改的地方(都算你的核心代码,在 3.3 一起做):`JudgmentResult.Level` 加 `NONE` 并更新字段说明;`JudgmentValidator` 按上表改规则(删掉"SUITABLE 不能是 LOW"、"UNSUITABLE 不能是 HIGH",改为按表校验);`JudgmentValidatorTest` 同步;v2 prompt 的打分规则按上表写。
+v1 prompt 保持原样不改,它是回归的对照组。
 
 ## 3. 你要做的
 
@@ -62,7 +71,7 @@ python3 ~/WebApp/linkops-lite/eval/regress.py run --versions v1
 3. 页面没有明确说明时,三个 YES/NO 字段填 UNKNOWN(Day 2 遗留问题)。
 4. 2–3 个 few-shot 例子:正反都有,**不用标注集里的站**。
 
-如果第 2 节选了方案 A,同时改 `JudgmentValidator` 和它的测试(这部分也算核心代码)。
+同时按第 2 节的表改 `JudgmentResult.Level`、`JudgmentValidator` 和它的测试。
 
 ### 3.4 回归对比
 
