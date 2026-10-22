@@ -23,6 +23,10 @@
 - 只有**明确不合适**才判 UNSUITABLE:只收某类产品(如只收 AI 工具)、只收付费、无法留链接、明显垃圾站。
 - 通用软件目录、产品展示、工具集合等,即使受众不完全重合,也判 SUITABLE,用等级(HIGH/MEDIUM/LOW)区分优先级。
 - 信息不足判 UNCERTAIN,不猜。
+- **标注与研判口径(2026-10-22 定):**
+  - 能提交(有入口、能留链接)就判 SUITABLE,不论站点主题(AI 工具目录也算)。
+  - 需要登录才能看到入口,或找不到提交入口 → UNCERTAIN。
+  - 站已失效、明显垃圾站 → UNSUITABLE。
 - **档位(level)只表示"适合的站里先发哪个"(2026-10-21 定,方案 A):**
   - SUITABLE → HIGH / MEDIUM / LOW,按相关度和渠道质量排优先级;LOW = 适合但优先级低,不是"不相关"。
   - UNSUITABLE → NONE(不分档);UNCERTAIN → UNRATED。

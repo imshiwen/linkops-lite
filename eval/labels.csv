@@ -1,3 +1,26 @@
 source_id,site,expected,labeled_at,note
-4,cursivefontgenerator,SUITABLE,2026-10-22,"AI 工具目录,有提交入口;原标 UNSUITABLE,按 10-22 规则(能提交即适合)改标"
-6,cursivefontgenerator,SUITABLE,2026-10-22,"AI 工具目录,有提交入口;原标 UNSUITABLE,按 10-22 规则(能提交即适合)改标"
+4,cursivefontgenerator,SUITABLE,2026-10-22,"AI 工具目录,有提交入口;原标 UNSUITABLE,按 10-22 口径(能提交即适合)改标"
+6,cursivefontgenerator,SUITABLE,2026-10-22,"AI 工具目录,有提交入口;原标 UNSUITABLE,按 10-22 口径(能提交即适合)改标"
+9,cursivefontgenerator,SUITABLE,2026-10-18,"通用软件目录;原标 UNSUITABLE,复核后认为标准过窄,按宽进原则改为 SUITABLE"
+136,cursivefontgenerator,SUITABLE,2026-10-17,"产品展示,契合在线工具站"
+46,cursivefontgenerator,SUITABLE,2026-10-17,"产品展示,契合在线工具站"
+171,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+369,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+265,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+383,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+137,cursivefontgenerator,UNCERTAIN,2026-10-22,没有找到可以发链接的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+293,cursivefontgenerator,UNSUITABLE,2026-10-21,站已经没了
+330,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+107,cursivefontgenerator,SUITABLE,2026-10-21,虽说是ai工具，但是有发的地方，可以发
+455,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+463,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+153,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+19,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+23,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+453,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+465,cursivefontgenerator,SUITABLE,2026-10-21,有发布的地方
+44,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+56,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+69,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+205,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标
+53,cursivefontgenerator,UNCERTAIN,2026-10-22,需要登录，没有找到提交的地方;按 10-22 口径(需登录或找不到入口=不确定)改标

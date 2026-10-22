@@ -47,6 +47,7 @@
 | 10-17 | 代码按层存放:controller / service(只编排)/ component(功能类)/ mapper / dto / entity / util | `architecture.md` |
 | 10-18 | 研判默认关闭思考 + temperature=0 | 实验 15/15 全对且最快;`day-02.md` |
 | 10-18 | 研判"宽进",召回优先,用等级区分优先级 | 外链尽量多发,人工审核兜底;`design.md` |
+| 10-22 | 标注口径:能提交即适合;需登录或找不到入口为不确定;失效或垃圾站为不适合 | 统一 Day 2 与 Day 3 标注;`design.md` |
 | 10-21 | 档位只给"适合"排优先级:SUITABLE→HIGH/MEDIUM/LOW,UNSUITABLE→NONE,UNCERTAIN→UNRATED | 统一宽进原则、prompt、校验器三处说法;`design.md` |
 
 ## 5. 文件索引
@@ -58,7 +59,7 @@
 | `docs/design.md` | 数据模型、两阶段筛选、宽进原则、执行边界 |
 | `docs/day-XX.md` | 每天的学习内容、任务、实验结论、面试怎么讲、复盘 |
 | `docs/ideas.md` | 十天内不做的想法、后续要注意的接口限制 |
-| `eval/labels.csv` | 人工标注(当前 5 条) |
+| `eval/labels.csv` | 人工标注(当前 25 条) |
 | `eval/to-label.csv` | 待标注入口 |
 | `eval/regress.py` | 按提示词版本回归标注集 |
 | `eval/results/` | 实验原始结果 |
