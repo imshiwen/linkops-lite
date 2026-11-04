@@ -12,6 +12,7 @@ public class BacklinkSource {
     private String description;
     private String batch;
     private String note;
+    private String channel;
     private String screenStatus;
     private Integer httpStatus;
     private String finalUrl;
@@ -35,6 +36,8 @@ public class BacklinkSource {
     public void setBatch(String batch) { this.batch = batch; }
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+    public String getChannel() { return channel; }
+    public void setChannel(String channel) { this.channel = channel; }
     public String getScreenStatus() { return screenStatus; }
     public void setScreenStatus(String screenStatus) { this.screenStatus = screenStatus; }
     public Integer getHttpStatus() { return httpStatus; }

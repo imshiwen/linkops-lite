@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>站点配置 · linkops-lite</title><link rel="stylesheet" href="app.css"></head>
+<body>
+<main>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">我的站点</h3><button class="ghost" onclick="edit(null)">新建站点</button>
+    </div>
+    <table id="list" style="margin-top:12px"></table>
+  </div>
+  <form class="card" id="form" onsubmit="save(event)" style="display:none">
+    <h3 id="title" style="margin-top:0"></h3>
+    <div class="row">
+      <div><label>名称 *</label><input name="name" required></div>
+      <div><label>域名 *</label><input name="domain" required placeholder="example.com"></div>
+      <div><label>首页 URL *</label><input name="homepageUrl" required placeholder="https://example.com/"></div>
+      <div><label>联系人 *</label><input name="contactName" required></div>
+      <div><label>联系邮箱 *(只存本机库)</label><input name="contactEmail" type="email" required></div>
+      <div><label>评论署名(Name 字段,留空用联系人)</label><input name="commentName"></div>
+    </div>
+    <label>站点介绍 *(研判判断相关度)</label><textarea name="intro" required></textarea>
+    <h4>提交资料包</h4>
+    <div class="row">
+      <div><label>一句话(≤60)</label><input name="tagline" maxlength="60"></div>
+      <div><label>定价</label><input name="pricing" placeholder="Free"></div>
+    </div>
+    <label>短描述(≤160)</label><textarea name="shortDescription" maxlength="160"></textarea>
+    <label>长描述(≤500)</label><textarea name="longDescription" maxlength="500"></textarea>
+    <div class="row">
+      <div><label>分类(逗号分隔)</label><input name="categories"></div>
+      <div><label>标签(逗号分隔)</label><input name="tags"></div>
+      <div><label>Logo URL</label><input name="logoUrl"></div>
+      <div><label>截图 URL</label><input name="screenshotUrl"></div>
+    </div>
+    <label>事实清单(每行一条;起草只能引用这些事实)</label><textarea name="facts" style="min-height:110px"></textarea>
+    <label>重要页面(每行:URL | 一句话说明;博客评论会选最相关的一页)</label><textarea name="keyPages" style="min-height:90px"></textarea>
+    <div style="margin-top:14px;display:flex;gap:8px"><button>保存</button><button type="button" class="ghost" onclick="hideForm()">取消</button></div>
+    <div id="msg"></div>
+  </form>
+</main>
+<script src="app.js"></script>
+<script>
+nav("sites.html");
+let editingId = null;
+const f = document.getElementById("form");
+const csv = s => s.split(/[,，]/).map(x => x.trim()).filter(Boolean);
+const lines = s => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+async function load() {
+  const sites = await api("/api/sites");
+  document.getElementById("list").innerHTML = "<tr><th>名称</th><th>域名</th><th>联系人</th><th>事实</th><th>重要页面</th><th></th></tr>" +
+    (sites.length ? sites.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.domain)}</td><td>${esc(s.contactName)}</td>
+      <td>${s.facts.length}</td><td>${s.keyPages.length}</td><td><button class="ghost" onclick="edit(${s.id})">编辑</button></td></tr>`).join("")
+      : `<tr><td colspan="6" class="muted">还没有站点</td></tr>`);
+}
+async function edit(id) {
+  editingId = id; f.reset(); document.getElementById("msg").textContent = "";
+  document.getElementById("title").textContent = id ? "编辑站点" : "新建站点";
+  if (id) {
+    const s = await api("/api/sites/" + id), k = s.submitKit || {};
+    for (const n of ["name","domain","homepageUrl","contactName","contactEmail","commentName","intro"]) f[n].value = s[n] ?? "";
+    for (const n of ["tagline","shortDescription","longDescription","pricing","logoUrl","screenshotUrl"]) f[n].value = k[n] ?? "";
+    f.categories.value = (k.categories || []).join(", "); f.tags.value = (k.tags || []).join(", ");
+    f.facts.value = s.facts.join("\n");
+    f.keyPages.value = s.keyPages.map(p => p.url + (p.summary ? " | " + p.summary : "")).join("\n");
+  }
+  f.style.display = ""; f.scrollIntoView({behavior: "smooth"});
+}
+function hideForm() { f.style.display = "none"; }
+async function save(e) {
+  e.preventDefault();
+  const body = {
+    name: f.name.value, domain: f.domain.value, homepageUrl: f.homepageUrl.value, contactName: f.contactName.value,
+    contactEmail: f.contactEmail.value, commentName: f.commentName.value, intro: f.intro.value,
+    submitKit: { tagline: f.tagline.value || null, shortDescription: f.shortDescription.value || null,
+      longDescription: f.longDescription.value || null, categories: csv(f.categories.value), tags: csv(f.tags.value),
+      pricing: f.pricing.value || null, logoUrl: f.logoUrl.value || null, screenshotUrl: f.screenshotUrl.value || null },
+    facts: lines(f.facts.value),
+    keyPages: lines(f.keyPages.value).map(l => { const [url, ...rest] = l.split("|"); return { url: url.trim(), summary: rest.join("|").trim() || null }; })
+  };
+  const msg = document.getElementById("msg");
+  try {
+    await api(editingId ? "/api/sites/" + editingId : "/api/sites", { method: editingId ? "PUT" : "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+    msg.className = "ok"; msg.textContent = "已保存"; load();
+  } catch (err) { msg.className = "err"; msg.textContent = err.message; }
+}
+load().catch(e => document.getElementById("list").innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`);
+</script>
+</body></html>

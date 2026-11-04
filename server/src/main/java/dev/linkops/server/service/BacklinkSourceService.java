@@ -1,7 +1,9 @@
 package dev.linkops.server.service;
 
+import dev.linkops.server.dto.Channel;
 import dev.linkops.server.dto.ImportResult;
 import dev.linkops.server.dto.SourceStats;
+import dev.linkops.server.exception.NotFoundException;
 import dev.linkops.server.entity.BacklinkSource;
 import dev.linkops.server.mapper.BacklinkSourceMapper;
 import dev.linkops.server.util.SourceListParser;
@@ -27,7 +29,7 @@ public class BacklinkSourceService {
     }
 
     @Transactional
-    public ImportResult importText(String text) {
+    public ImportResult importText(String text, Channel channel) {
         List<SourceListParser.Row> rows = SourceListParser.parse(text);
         Set<String> seen = new HashSet<>();
         List<String> invalid = new ArrayList<>();
@@ -46,7 +48,7 @@ public class BacklinkSourceService {
                 dupInList++;
                 continue;
             }
-            toInsert.add(toEntity(row, n));
+            toInsert.add(toEntity(row, n, channel));
         }
 
         int inserted = 0;
@@ -56,15 +58,24 @@ public class BacklinkSourceService {
         return new ImportResult(rows.size(), inserted, dupInList, toInsert.size() - inserted, invalid);
     }
 
-    public List<BacklinkSource> list(int limit) {
-        return mapper.list(Math.min(Math.max(limit, 1), 500));
+    public List<BacklinkSource> list(String status, String channel, String keyword, int limit) {
+        String ch = channel == null || channel.isBlank() ? null : Channel.parse(channel).value();
+        return mapper.list(status, ch, keyword == null ? null : keyword.strip(), Math.min(Math.max(limit, 1), 1000));
+    }
+
+    public void updateChannel(long id, Channel channel) {
+        if (mapper.updateChannel(id, channel.value()) == 0) throw new NotFoundException("外链入口不存在:" + id);
+    }
+
+    public List<java.util.Map<String, Object>> channelCounts() {
+        return mapper.countByChannel();
     }
 
     public SourceStats stats() {
         return mapper.stats();
     }
 
-    private static BacklinkSource toEntity(SourceListParser.Row row, UrlNormalizer.Normalized n) {
+    private static BacklinkSource toEntity(SourceListParser.Row row, UrlNormalizer.Normalized n, Channel channel) {
         BacklinkSource s = new BacklinkSource();
         s.setUrl(row.url().strip());
         s.setNormalizedUrl(n.url());
@@ -73,6 +84,7 @@ public class BacklinkSourceService {
         s.setDescription(row.description());
         s.setBatch(row.batch());
         s.setNote(row.note());
+        s.setChannel(channel.value());
         return s;
     }
 }

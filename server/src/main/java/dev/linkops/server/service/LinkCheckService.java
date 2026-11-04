@@ -1,5 +1,6 @@
 package dev.linkops.server.service;
 
+import dev.linkops.server.component.ChannelDetector;
 import dev.linkops.server.dto.LinkCheckResult;
 import dev.linkops.server.dto.LinkCheckSummary;
 import dev.linkops.server.entity.BacklinkSource;
@@ -25,6 +26,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,13 +45,15 @@ public class LinkCheckService {
             "Mozilla/5.0 (compatible; linkops-lite/0.1; +https://github.com/imshiwen/linkops-lite)";
 
     private final BacklinkSourceMapper mapper;
+    private final ChannelDetector channelDetector;
     private final HttpClient http = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
-    public LinkCheckService(BacklinkSourceMapper mapper) {
+    public LinkCheckService(BacklinkSourceMapper mapper, ChannelDetector channelDetector) {
         this.mapper = mapper;
+        this.channelDetector = channelDetector;
     }
 
     public LinkCheckSummary check(String onlyStatus, int limit) {
@@ -94,12 +98,16 @@ public class LinkCheckService {
                     .header("Accept", "text/html,*/*")
                     .GET()
                     .build();
-            HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
             String finalUrl = resp.uri().toString();
-            return new LinkCheckResult(s.getId(), classify(resp.statusCode()), resp.statusCode(),
-                    finalUrl.equals(s.getUrl().strip()) ? null : finalUrl, null);
+            String status = classify(resp.statusCode());
+            // 顺带按页面结构识别渠道;只对能正常打开的页面识别,是否覆盖由 SQL 决定(只改 unknown)
+            String channel = status.equals("ok")
+                    ? channelDetector.detect(Jsoup.parse(resp.body(), finalUrl)).value() : null;
+            return new LinkCheckResult(s.getId(), status, resp.statusCode(),
+                    finalUrl.equals(s.getUrl().strip()) ? null : finalUrl, null, channel);
         } catch (Exception e) {
-            return new LinkCheckResult(s.getId(), classify(e), null, null, describe(e));
+            return new LinkCheckResult(s.getId(), classify(e), null, null, describe(e), null);
         }
     }
 

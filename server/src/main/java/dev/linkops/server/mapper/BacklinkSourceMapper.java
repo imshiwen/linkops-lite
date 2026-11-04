@@ -13,7 +13,13 @@ public interface BacklinkSourceMapper {
     /** 多值批量插入,normalized_url 冲突时跳过;返回实际插入行数。 */
     int insertIgnoreBatch(@Param("list") List<BacklinkSource> list);
 
-    List<BacklinkSource> list(@Param("limit") int limit);
+    /** 列表筛选:status、channel、keyword 均可为空。 */
+    List<BacklinkSource> list(@Param("status") String status, @Param("channel") String channel,
+                              @Param("keyword") String keyword, @Param("limit") int limit);
+
+    int updateChannel(@Param("id") long id, @Param("channel") String channel);
+
+    List<java.util.Map<String, Object>> countByChannel();
 
     BacklinkSource findById(@Param("id") long id);
 

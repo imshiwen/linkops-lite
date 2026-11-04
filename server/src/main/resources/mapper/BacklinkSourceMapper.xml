@@ -3,25 +3,41 @@
 <mapper namespace="dev.linkops.server.mapper.BacklinkSourceMapper">
 
     <insert id="insertIgnoreBatch">
-        insert into backlink_source (url, normalized_url, host, name, description, batch, note)
+        insert into backlink_source (url, normalized_url, host, name, description, batch, note, channel)
         values
         <foreach collection="list" item="s" separator=",">
-            (#{s.url}, #{s.normalizedUrl}, #{s.host}, #{s.name}, #{s.description}, #{s.batch}, #{s.note})
+            (#{s.url}, #{s.normalizedUrl}, #{s.host}, #{s.name}, #{s.description}, #{s.batch}, #{s.note}, #{s.channel})
         </foreach>
         on conflict (normalized_url) do nothing
     </insert>
 
     <select id="list" resultType="BacklinkSource">
         select id, url, normalized_url, host, name, description, batch, note,
-               screen_status, http_status, final_url, check_error, checked_at, created_at
+               channel, screen_status, http_status, final_url, check_error, checked_at, created_at
         from backlink_source
+        <where>
+            <if test="status != null and status != ''">and screen_status = #{status}</if>
+            <if test="channel != null and channel != ''">and channel = #{channel}</if>
+            <if test="keyword != null and keyword != ''">
+                and (url ilike '%' || #{keyword} || '%' or coalesce(name, '') ilike '%' || #{keyword} || '%'
+                     or coalesce(description, '') ilike '%' || #{keyword} || '%')
+            </if>
+        </where>
         order by id
         limit #{limit}
     </select>
 
+    <update id="updateChannel">
+        update backlink_source set channel = #{channel} where id = #{id}
+    </update>
+
+    <select id="countByChannel" resultType="map">
+        select channel, count(*) as count from backlink_source group by channel order by count desc
+    </select>
+
     <select id="findById" resultType="BacklinkSource">
         select id, url, normalized_url, host, name, description, batch, note,
-               screen_status, http_status, final_url, check_error, checked_at, created_at
+               channel, screen_status, http_status, final_url, check_error, checked_at, created_at
         from backlink_source
         where id = #{id}
     </select>
@@ -49,12 +65,13 @@
             http_status   = v.code,
             final_url     = v.final_url,
             check_error   = v.err,
+            channel       = case when b.channel = 'unknown' and v.channel is not null then v.channel else b.channel end,
             checked_at    = now()
         from (values
         <foreach collection="list" item="r" separator=",">
-            (#{r.id}::bigint, #{r.status}::text, #{r.httpStatus}::int, #{r.finalUrl}::text, #{r.error}::text)
+            (#{r.id}::bigint, #{r.status}::text, #{r.httpStatus}::int, #{r.finalUrl}::text, #{r.error}::text, #{r.channel}::text)
         </foreach>
-        ) as v(id, status, code, final_url, err)
+        ) as v(id, status, code, final_url, err, channel)
         where b.id = v.id
     </update>
 

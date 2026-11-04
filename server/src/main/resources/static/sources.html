@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>外链库 · linkops-lite</title><link rel="stylesheet" href="app.css"></head>
+<body>
+<main>
+  <div class="card">
+    <h3 style="margin-top:0">导入外链</h3>
+    <textarea id="text" placeholder="每行一个 URL,或粘贴 Markdown 表格" style="min-height:110px"></textarea>
+    <div class="row" style="margin-top:8px;align-items:end">
+      <div><label>这批入口的渠道</label>
+        <select id="importChannel"><option value="unknown">自动识别(检查时判断)</option><option value="blog_comment">博客评论</option>
+          <option value="submit_form">提交表单</option><option value="other">其他</option></select></div>
+      <div><button onclick="doImport()">导入</button></div>
+    </div>
+    <div id="importMsg"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="grid-template-columns:1fr 1fr 2fr auto;align-items:end">
+      <div><label>可访问状态</label><select id="fStatus"><option value="">全部</option><option>new</option><option>ok</option>
+        <option>blocked</option><option>unreachable</option><option>tls_invalid</option><option>dead</option><option>error</option></select></div>
+      <div><label>渠道</label><select id="fChannel"><option value="">全部</option><option value="blog_comment">博客评论</option>
+        <option value="submit_form">提交表单</option><option value="other">其他</option><option value="unknown">未知</option></select></div>
+      <div><label>关键词</label><input id="fKeyword" placeholder="网址、名称、简介"></div>
+      <div><button onclick="load()">筛选</button></div>
+    </div>
+    <p class="muted" id="summary"></p>
+    <table id="list"></table>
+  </div>
+</main>
+<script src="app.js"></script>
+<script>
+nav("sources.html");
+const CH = {blog_comment: "博客评论", submit_form: "提交表单", other: "其他", unknown: "未知"};
+async function doImport() {
+  const msg = document.getElementById("importMsg"), text = document.getElementById("text").value;
+  if (!text.trim()) { msg.className = "err"; msg.textContent = "先粘贴要导入的内容"; return; }
+  try {
+    const r = await api("/api/sources/import?channel=" + document.getElementById("importChannel").value,
+      { method: "POST", headers: {"Content-Type": "text/plain; charset=utf-8"}, body: text });
+    msg.className = "ok";
+    msg.textContent = `解析 ${r.parsed} 条,新入库 ${r.inserted},列表内重复 ${r.duplicateInList},库里已有 ${r.alreadyInDb}` +
+      (r.invalid.length ? `,无效 ${r.invalid.length}` : "") + "。新入口状态为 new,需运行可访问性检查。";
+    load();
+  } catch (e) { msg.className = "err"; msg.textContent = e.message; }
+}
+async function load() {
+  const q = new URLSearchParams({ status: fStatus.value, channel: fChannel.value, keyword: fKeyword.value, limit: 1000 });
+  const [rows, ch] = await Promise.all([api("/api/sources?" + q), api("/api/sources/channel/stats")]);
+  document.getElementById("summary").textContent = `显示 ${rows.length} 条(最多 1000)。全库渠道:` +
+    ch.map(c => `${CH[c.channel] || c.channel} ${c.count}`).join(" · ");
+  document.getElementById("list").innerHTML = "<tr><th>ID</th><th>入口</th><th>名称</th><th>状态</th><th>渠道</th></tr>" +
+    rows.map(r => `<tr><td>${r.id}</td><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></td>
+      <td>${esc(r.name)}</td><td><span class="tag">${esc(r.screenStatus)}</span></td>
+      <td><select onchange="setChannel(${r.id}, this.value)">${Object.entries(CH).map(([v,t]) =>
+        `<option value="${v}" ${v===r.channel?"selected":""}>${t}</option>`).join("")}</select></td></tr>`).join("");
+}
+async function setChannel(id, ch) {
+  try { await api(`/api/sources/${id}/channel`, { method: "PATCH", headers: {"Content-Type": "text/plain"}, body: ch }); }
+  catch (e) { alert(e.message); }
+}
+load().catch(e => document.getElementById("list").innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`);
+</script>
+</body></html>

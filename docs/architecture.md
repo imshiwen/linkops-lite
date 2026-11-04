@@ -37,11 +37,13 @@ linkops-lite/
         │   ├── mapper/        数据访问层接口(MyBatis),SQL 在 resources/mapper
         │   ├── entity/        与表一一对应的实体类
         │   ├── dto/           接口出入参和模型结构化输出(record),不直接暴露实体
+        │   ├── exception/     业务异常(如 NotFoundException),由 controller/GlobalExceptionHandler 转成 {"error"}
         │   └── util/          无状态工具:URL 规范化、列表解析
         ├── main/resources/
         │   ├── application.properties   应用配置(引用 .env.local 里的变量)
         │   ├── db/migration/            Flyway 迁移脚本
         │   ├── mapper/                  MyBatis XML
+        │   ├── static/                  页面(原生 HTML + JS):sources.html 外链库、sites.html 站点配置
         │   ├── prompts/judge/<版本>/   研判提示词(system.st、user.st,{变量} 占位),按版本存放
         │   └── sites/                   自有站资料(Day 5 前先用文件,之后进库)
         └── test/java/                   单元测试

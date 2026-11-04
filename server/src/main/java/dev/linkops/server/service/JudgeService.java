@@ -2,6 +2,7 @@ package dev.linkops.server.service;
 
 import dev.linkops.server.component.JudgmentValidator;
 import dev.linkops.server.component.PageFetcher;
+import dev.linkops.server.component.SiteProfileRenderer;
 import dev.linkops.server.dto.JudgeRequest;
 import dev.linkops.server.dto.JudgeResponse;
 import dev.linkops.server.dto.JudgmentResult;
@@ -36,6 +37,8 @@ public class JudgeService {
     private final PageFetcher fetcher;
     private final JudgmentValidator validator;
     private final BacklinkSourceMapper sourceMapper;
+    private final SiteService siteService;
+    private final SiteProfileRenderer profileRenderer;
     private final String model;
     /** 最多尝试次数(含第一次)。 */
     private final int maxAttempts;
@@ -45,7 +48,8 @@ public class JudgeService {
     private final String defaultPromptVersion;
 
     public JudgeService(ChatClient.Builder builder, PageFetcher fetcher, JudgmentValidator validator,
-                        BacklinkSourceMapper sourceMapper,
+                        BacklinkSourceMapper sourceMapper, SiteService siteService,
+                        SiteProfileRenderer profileRenderer,
                         @Value("${spring.ai.openai.chat.model:}") String model,
                         @Value("${app.judge.max-attempts:3}") int maxAttempts,
                         @Value("${app.judge.temperature:0}") double defaultTemperature,
@@ -54,6 +58,8 @@ public class JudgeService {
         this.fetcher = fetcher;
         this.validator = validator;
         this.sourceMapper = sourceMapper;
+        this.siteService = siteService;
+        this.profileRenderer = profileRenderer;
         this.model = model;
         this.maxAttempts = Math.max(1, maxAttempts);
         this.defaultTemperature = defaultTemperature;
@@ -64,7 +70,9 @@ public class JudgeService {
         BacklinkSource source = sourceMapper.findById(req.sourceId());
         if (source == null) throw new IllegalArgumentException("source not found: " + req.sourceId());
         PageSnapshot page = fetcher.fetch(source.getUrl());
-        String site = loadSite(req.siteOrDefault());
+        String site = req.siteId() != null
+                ? profileRenderer.render(siteService.get(req.siteId()))
+                : loadSite(req.siteOrDefault());
         boolean thinking = Boolean.TRUE.equals(req.thinking());
         boolean nativeSchema = Boolean.TRUE.equals(req.nativeSchema());
         double temperature = req.temperature() != null ? req.temperature() : defaultTemperature;
